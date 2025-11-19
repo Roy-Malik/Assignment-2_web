@@ -1,0 +1,50 @@
+{
+  "musicCards": [
+    {
+      "id": 1,
+      "title": "Focus Flow",
+      "description": "Deep beats to lock in.",
+      "genre": "Study",
+      "duration": "2:45"
+    },
+    {
+      "id": 2,
+      "title": "Midnight Lofi",
+      "description": "Late-night code vibes.",
+      "genre": "Lofi",
+      "duration": "3:20"
+    },
+    {
+      "id": 3,
+      "title": "Bol Beats",
+      "description": "Pak fusion rhythms.",
+      "genre": "Fusion",
+      "duration": "4:15"
+    },
+    {
+      "id": 4,
+      "title": "Synthwave Run",
+      "description": "Retro-future energy.",
+      "genre": "Electronic",
+      "duration": "3:50"
+    },
+    {
+      "id": 5,
+      "title": "Acoustic Chill",
+      "description": "Soft strings, clear minds.",
+      "genre": "Acoustic",
+      "duration": "2:30"
+    },
+    {
+      "id": 6,
+      "title": "Pop Pakistan",
+      "description": "Chart toppers, desi twist.",
+      "genre": "Pop",
+      "duration": "3:45"
+    }
+  ],
+  "featuredPlaylist": {
+    "title": "Today's Picks",
+    "description": "Curated just for you"
+  }
+}
