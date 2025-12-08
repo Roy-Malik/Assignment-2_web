@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import api from '../services/api';
 import Navbar from '../components/Navbar';
 import backgroundImage from '../assets/bg-image.png';
 import googleLogo from '../assets/google.svg';
@@ -21,7 +20,7 @@ function Signup() {
   const darkBackground = savedTheme === 'dark';
 
   // Background style based on theme
-  const backgroundStyle = darkBackground 
+  const backgroundStyle = darkBackground
     ? { backgroundColor: '#111827' }
     : { backgroundImage: `url(${backgroundImage})`, backgroundRepeat: 'repeat' };
 
@@ -40,90 +39,83 @@ function Signup() {
     setMessage('');
 
     try {
-      // Add user to Firestore
-      const docRef = await addDoc(collection(db, 'users'), {
+      const response = await api.post('/users/signup', {
         name: formData.name,
         email: formData.email,
-        password: formData.password, // Note: In real app, hash passwords!
-        createdAt: serverTimestamp(),
-        signupMethod: 'email'
+        password: formData.password,
+        passwordConfirm: formData.password
       });
 
       setMessage('✅ Account created successfully!');
-      console.log('User added with ID: ', docRef.id);
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        password: ''
-      });
 
+      // Optionally login automatically
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      // window.location.href = '/'; // Or use navigate 
     } catch (error) {
       console.error('Error adding user: ', error);
-      setMessage('❌ Error creating account. Please try again.');
+      setMessage(`❌ ${error.response?.data?.message || 'Error creating account.'}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen text-white flex flex-col items-center"
       style={backgroundStyle}
     >
       <Navbar />
-      
+
       {/* Signup Container */}
       <div className="mt-28 mb-10 flex flex-col items-center py-8 px-10 rounded-xl w-96 text-center bg-gray-800 bg-opacity-95 shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
         <p className="font-bold text-3xl mb-5">Create your account</p>
 
         {/* Success/Error Message */}
         {message && (
-          <div className={`w-full p-3 rounded mb-4 text-sm ${
-            message.includes('✅') ? 'bg-green-600' : 'bg-red-600'
-          }`}>
+          <div className={`w-full p-3 rounded mb-4 text-sm ${message.includes('✅') ? 'bg-green-600' : 'bg-red-600'
+            }`}>
             {message}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col w-full mb-4">
           <label htmlFor="name" className="text-sm mt-2 mb-1 text-left">Name</label>
-          <input 
-            type="text" 
-            id="name" 
-            placeholder="Your name" 
-            required 
+          <input
+            type="text"
+            id="name"
+            placeholder="Your name"
+            required
             value={formData.name}
             onChange={handleInputChange}
             className="py-2 px-3 border-none rounded mb-4 text-sm outline-none bg-gray-700 text-white"
           />
 
           <label htmlFor="email" className="text-sm mt-2 mb-1 text-left">Email</label>
-          <input 
-            type="email" 
-            id="email" 
-            placeholder="you@example.com" 
-            required 
+          <input
+            type="email"
+            id="email"
+            placeholder="you@example.com"
+            required
             value={formData.email}
             onChange={handleInputChange}
             className="py-2 px-3 border-none rounded mb-4 text-sm outline-none bg-gray-700 text-white"
           />
 
           <label htmlFor="password" className="text-sm mt-2 mb-1 text-left">Password</label>
-          <input 
-            type="password" 
-            id="password" 
-            placeholder="At least 6 characters" 
-            required 
+          <input
+            type="password"
+            id="password"
+            placeholder="At least 6 characters"
+            required
             minLength="6"
             value={formData.password}
             onChange={handleInputChange}
             className="py-2 px-3 border-none rounded mb-4 text-sm outline-none bg-gray-700 text-white"
           />
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="bg-gradient-to-r from-purple-500 to-purple-700 text-white border-none py-3 rounded-full text-base font-bold cursor-pointer hover:opacity-85 transition-opacity duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >

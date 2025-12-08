@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import api from '../services/api';
 import Navbar from '../components/Navbar';
 import backgroundImage from '../assets/bg-image.png';
 import musicData from '../data/musicData.json';
@@ -6,17 +7,19 @@ import content from "../data/content.json";
 import AIChat from '../components/AIChat';
 import Footer from '../components/Footer';
 
-
 function Home() {
   const [musicCards, setMusicCards] = useState([]);
   const [featuredPlaylist, setFeaturedPlaylist] = useState({});
   const [loading, setLoading] = useState(true);
   const [darkBackground, setDarkBackground] = useState(false);
   const [contentData, setContentData] = useState({});
-  // NEW: API states
   const [topArtists, setTopArtists] = useState([]);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState('');
+  
+  // NEW: Video playback state
+  const [playingVideoId, setPlayingVideoId] = useState(null);
+  const videoRefs = useRef({});
 
   // Listen for theme changes from Navbar
   useEffect(() => {
@@ -38,18 +41,52 @@ function Home() {
     };
   }, []);
 
-  // Load music data
+  // Load music data from API
   useEffect(() => {
-    const loadMusicData = () => {
+    const fetchSongs = async () => {
       setLoading(true);
-      setTimeout(() => {
-        setMusicCards(musicData.musicCards);
+      try {
+        // Use the API to get songs
+        const response = await api.get('/songs');
+        // Add video URLs to songs (you can modify this based on your data structure)
+        const songsWithVideos = response.data.data.songs.map(song => ({
+          ...song,
+          // Use sample video URLs or get from your database
+          videoUrl: song.videoUrl || getSampleVideoUrl(song.genre)
+        }));
+        setMusicCards(songsWithVideos);
+
+        // Featured playlist can stay static or come from specific endpoint
         setFeaturedPlaylist(musicData.featuredPlaylist);
+      } catch (err) {
+        console.error("Failed to fetch songs", err);
+        setMusicCards([]);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
-    loadMusicData();
+
+    fetchSongs();
   }, []);
+
+  // Function to get sample video URLs based on genre
+// Update the getSampleVideoUrl function in Home.js to match AddSong genres:
+
+const getSampleVideoUrl = (genre) => {
+  // Match the exact genres from AddSong.js
+  const sampleVideos = {
+    'Pop': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    'Rock': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    'Electronic': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    'Lofi': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    'Qawwali': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    'Sufi': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    'HipHop': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4'
+  };
+  
+  // Return the video for the genre, default to Pop if genre not found
+  return sampleVideos[genre] || sampleVideos['Pop'];
+};
 
   // NEW: API call for top artists
   useEffect(() => {
@@ -58,8 +95,6 @@ function Home() {
         setApiLoading(true);
         // iTunes API search for Pakistani artists
         const response = await fetch('https://itunes.apple.com/search?term=pakistani+artist&entity=musicArtist&limit=6');
-
-        
         const data = await response.json();
         setTopArtists(data.results.slice(0, 6)); // Get top 6 artists
         setApiError('');
@@ -83,14 +118,41 @@ function Home() {
     fetchTopArtists();
   }, []);
 
+  // NEW: Toggle video playback
+  const toggleVideoPlayback = (cardId) => {
+    if (playingVideoId === cardId) {
+      // Pause and close current video
+      if (videoRefs.current[cardId]) {
+        videoRefs.current[cardId].pause();
+      }
+      setPlayingVideoId(null);
+    } else {
+      // Pause any currently playing video
+      if (playingVideoId && videoRefs.current[playingVideoId]) {
+        videoRefs.current[playingVideoId].pause();
+      }
+      
+      // Play new video
+      setPlayingVideoId(cardId);
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        if (videoRefs.current[cardId]) {
+          videoRefs.current[cardId].play().catch(e => {
+            console.error("Video play failed:", e);
+          });
+        }
+      }, 100);
+    }
+  };
+
   // Background style based on theme
-  const backgroundStyle = darkBackground 
+  const backgroundStyle = darkBackground
     ? { backgroundColor: '#111827' } // Solid dark gray
     : { backgroundImage: `url(${backgroundImage})`, backgroundRepeat: 'repeat' };
 
   if (loading) {
     return (
-      <div 
+      <div
         className="min-h-screen text-white flex flex-col items-center justify-center"
         style={backgroundStyle}
       >
@@ -104,19 +166,19 @@ function Home() {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen text-white flex flex-col"
       style={backgroundStyle}
     >
       <Navbar />
-      
+
       {/* Welcome Section */}
       <section className="mt-24 text-center mb-8">
         <h1 className="text-4xl font-bold mb-4">Welcome to Groovify</h1>
         <p className="text-gray-300 text-lg">
           Fresh picks for you. Purple beats, black nights, and clean layouts.
         </p>
-        
+
         <div className="mt-6 bg-purple-900 bg-opacity-50 p-4 rounded-lg max-w-md mx-auto">
           <h2 className="text-xl font-bold text-purple-300">{featuredPlaylist.title}</h2>
           <p className="text-gray-300">{featuredPlaylist.description}</p>
@@ -144,7 +206,7 @@ function Home() {
       {/* NEW: API Data Section - Top Artists */}
       <section className="text-center mb-8 px-8">
         <h2 className="text-2xl font-bold mb-4">Popular Pakistani Artists</h2>
-        
+
         {apiLoading ? (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
@@ -153,10 +215,10 @@ function Home() {
         ) : apiError ? (
           <p className="text-yellow-500">{apiError} (Showing fallback data)</p>
         ) : null}
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {topArtists.map((artist, index) => (
-            <div 
+            <div
               key={index}
               className="bg-gray-800 bg-opacity-80 p-4 rounded-lg text-center hover:bg-gray-700 transition-colors duration-300"
             >
@@ -174,11 +236,11 @@ function Home() {
         </div>
       </section>
 
-      {/* Music Cards Section */}
+      {/* Music Cards Section - UPDATED with video player */}
       <section className="flex flex-col items-start gap-5 p-8 w-full max-w-7xl mx-auto">
         {musicCards.map(card => (
-          <div 
-            key={card.id} 
+          <div
+            key={card._id || card.id}
             className="bg-gray-800 bg-opacity-95 p-5 rounded-xl text-left shadow-lg hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 w-11/12 max-w-none"
           >
             <div className="flex justify-between items-start">
@@ -191,8 +253,35 @@ function Home() {
                 {card.duration}
               </span>
             </div>
-            <button className="mt-4 bg-gradient-to-r from-purple-500 to-purple-700 text-white border-none py-2 px-5 rounded-full text-sm font-bold cursor-pointer hover:opacity-85 transition-opacity duration-300">
-              ▶ Play
+
+            {/* Video Player - Conditionally rendered */}
+            {playingVideoId === (card._id || card.id) && (
+              <div className="mt-4 mb-4 rounded-xl overflow-hidden shadow-lg">
+                <video
+                  ref={el => videoRefs.current[card._id || card.id] = el}
+                  className="w-full max-h-64 object-cover"
+                  controls
+                  onEnded={() => setPlayingVideoId(null)}
+                >
+                  <source src={card.videoUrl} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )}
+
+            <button 
+              onClick={() => toggleVideoPlayback(card._id || card.id)}
+              className="mt-4 bg-gradient-to-r from-purple-500 to-purple-700 text-white border-none py-2 px-5 rounded-full text-sm font-bold cursor-pointer hover:opacity-85 transition-opacity duration-300 flex items-center gap-2"
+            >
+              {playingVideoId === (card._id || card.id) ? (
+                <>
+                  <span>⏸️</span> Pause Video
+                </>
+              ) : (
+                <>
+                  <span>▶</span> Play Video
+                </>
+              )}
             </button>
           </div>
         ))}

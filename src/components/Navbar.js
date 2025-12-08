@@ -18,10 +18,10 @@ function Navbar() {
     const newTheme = !darkBackground;
     setDarkBackground(newTheme);
     localStorage.setItem('groovifyBackground', newTheme ? 'dark' : 'image');
-    
+
     // Apply theme to body or notify parent component
-    document.dispatchEvent(new CustomEvent('themeChange', { 
-      detail: { darkBackground: newTheme } 
+    document.dispatchEvent(new CustomEvent('themeChange', {
+      detail: { darkBackground: newTheme }
     }));
   };
 
@@ -38,7 +38,7 @@ function Navbar() {
 
       <div className="flex items-center gap-5">
         {/* Background Toggle Button */}
-        <button 
+        <button
           onClick={toggleBackground}
           className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-full text-sm font-bold transition-colors"
         >
@@ -48,6 +48,9 @@ function Navbar() {
         <nav className="flex gap-5">
           <Link to="/" className="text-white no-underline font-bold hover:text-purple-500 transition-colors duration-300">
             Home
+          </Link>
+          <Link to="/dashboard" className="text-white no-underline font-bold hover:text-purple-500 transition-colors duration-300">
+            Dashboard
           </Link>
           <Link to="/login" className="text-white no-underline font-bold hover:text-purple-500 transition-colors duration-300">
             Login
